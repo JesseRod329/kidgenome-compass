@@ -20,7 +20,7 @@ The important part is the safety design. It does not diagnose, recommend treatme
 
 Everything runs in the browser. No DNA upload. No account. No backend.
 
-Demo: <VERCEL_URL>
-GitHub: <GITHUB_URL>
+Demo: https://kidgenome-compass-k9nb9euqn-jesserod329s-projects.vercel.app
+GitHub: https://github.com/JesseRod329/kidgenome-compass
 
 I wanted to show Codex building something more serious than a landing page: a polished, privacy-first science interface with real medical safety boundaries.
