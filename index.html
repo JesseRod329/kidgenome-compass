@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KidGenome Compass</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar" aria-label="Application header">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">KG</span>
+        <div>
+          <strong>KidGenome Compass</strong>
+          <span>Local-first DNA triage for parents</span>
+        </div>
+      </div>
+      <div class="privacy-pill">No upload. Browser only.</div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <canvas id="helixCanvas" width="720" height="420" aria-label="Animated DNA and protein ribbon visualization"></canvas>
+        <div class="hero-copy">
+          <p class="eyebrow">Google DeepMind research, translated carefully</p>
+          <h1>Turn a child genetic report into plain-language next steps.</h1>
+          <p class="lede">
+            Paste a VCF-style report, load the demo, or upload a text file. The app explains pediatric relevance,
+            shows protein and regulatory AI signals, and prepares questions for a genetic counselor.
+          </p>
+          <div class="hero-actions">
+            <button id="loadDemo" class="primary">Load demo child report</button>
+            <label class="file-button">
+              Upload VCF/TXT
+              <input id="fileInput" type="file" accept=".vcf,.txt,.tsv,.csv">
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section class="safety-strip" aria-label="Safety notice">
+        <strong>Not a diagnosis.</strong>
+        <span>This prototype does not decide disease risk or treatment. It flags items to discuss with a licensed clinician.</span>
+      </section>
+
+      <section class="workspace" aria-label="DNA analysis workspace">
+        <aside class="input-panel">
+          <div class="panel-heading">
+            <h2>Report Input</h2>
+            <button id="clearInput" class="ghost">Clear</button>
+          </div>
+          <textarea id="vcfInput" spellcheck="false" placeholder="Paste VCF rows here. Example columns: #CHROM POS ID REF ALT QUAL FILTER INFO"></textarea>
+          <div class="profile-grid" aria-label="Child context">
+            <label>
+              Child age
+              <input id="childAge" type="number" min="0" max="18" value="8">
+            </label>
+            <label>
+              Known family history
+              <select id="familyHistory">
+                <option value="none">None known</option>
+                <option value="blood">Blood disorder</option>
+                <option value="metabolic">Metabolic condition</option>
+                <option value="immune">Immune or infection sensitivity</option>
+              </select>
+            </label>
+          </div>
+          <div class="controls">
+            <label>
+              Show threshold
+              <input id="signalThreshold" type="range" min="0" max="1" step="0.01" value="0.56">
+            </label>
+            <output id="thresholdOutput">0.56</output>
+          </div>
+          <label class="shield-toggle">
+            <input id="adultShield" type="checkbox" checked>
+            Hide adult-onset findings from parent action list
+          </label>
+          <button id="analyzeBtn" class="primary full">Analyze locally</button>
+          <p class="microcopy">Works best with INFO keys like GENE, CONSEQUENCE, CLNSIG, CONDITION, AM_SCORE, AG_SCORE, DP, and PEDIATRIC.</p>
+        </aside>
+
+        <section class="results-panel">
+          <div class="result-header">
+            <div>
+              <p class="eyebrow">Parent view</p>
+              <h2 id="summaryTitle">No report loaded</h2>
+            </div>
+            <div class="score-ring" aria-label="Review readiness score">
+              <span id="readinessScore">0</span>
+              <small>review score</small>
+            </div>
+          </div>
+
+          <div class="summary-grid" aria-label="Summary counts">
+            <div class="summary-card urgent">
+              <span id="doctorCount">0</span>
+              <p>ask clinician soon</p>
+            </div>
+            <div class="summary-card watch">
+              <span id="watchCount">0</span>
+              <p>watch or clarify</p>
+            </div>
+            <div class="summary-card calm">
+              <span id="calmCount">0</span>
+              <p>low signal</p>
+            </div>
+          </div>
+
+          <div class="molecular-map" aria-label="Molecular overview">
+            <div class="map-lane">
+              <span>DNA</span>
+              <div id="dnaRail" class="rail"></div>
+            </div>
+            <div class="map-lane">
+              <span>Protein</span>
+              <div id="proteinRail" class="rail"></div>
+            </div>
+            <div class="map-lane">
+              <span>Regulation</span>
+              <div id="regRail" class="rail"></div>
+            </div>
+          </div>
+
+          <div class="tabs" role="tablist" aria-label="Variant filters">
+            <button class="tab active" data-filter="all">All</button>
+            <button class="tab" data-filter="doctor">Clinician</button>
+            <button class="tab" data-filter="watch">Watch</button>
+            <button class="tab" data-filter="calm">Low signal</button>
+          </div>
+
+          <div id="variantList" class="variant-list" aria-live="polite"></div>
+        </section>
+      </section>
+
+      <section class="guidance">
+        <div class="action-card">
+          <div class="panel-heading">
+            <h2>48-hour plan</h2>
+            <button id="downloadHandoff" class="ghost">Download handoff</button>
+          </div>
+          <div id="actionPlan" class="action-plan">
+            Load a report to create a parent-safe action plan.
+          </div>
+        </div>
+
+        <div class="questions-card">
+          <div class="panel-heading">
+            <h2>Questions to bring</h2>
+            <button id="copyQuestions" class="ghost">Copy</button>
+          </div>
+          <ol id="questionList">
+            <li>Load a report to generate clinician questions.</li>
+          </ol>
+        </div>
+
+        <div class="research-card">
+          <h2>Research basis</h2>
+          <div class="research-item">
+            <strong>DeepVariant</strong>
+            <span>Variant calling quality signal from sequencing data. Here it is represented by QUAL and depth, not rerun from raw reads.</span>
+          </div>
+          <div class="research-item">
+            <strong>AlphaMissense</strong>
+            <span>Protein-changing missense variants get an optional AM_SCORE label using published threshold bands.</span>
+          </div>
+          <div class="research-item">
+            <strong>AlphaGenome</strong>
+            <span>Regulatory or non-coding variants can carry AG_SCORE as a research signal for gene regulation impact.</span>
+          </div>
+          <div class="research-item warning">
+            <strong>Child safety rule</strong>
+            <span>Adult-onset findings should not be surfaced as parenting action items unless a clinician specifically ordered that review.</span>
+          </div>
+          <div class="source-links">
+            <a href="https://deepmind.google/research/projects/alphamissense/" target="_blank" rel="noreferrer">AlphaMissense</a>
+            <a href="https://deepmind.google/blog/alphagenome-ai-for-better-understanding-the-genome/" target="_blank" rel="noreferrer">AlphaGenome</a>
+            <a href="https://github.com/google/deepvariant" target="_blank" rel="noreferrer">DeepVariant</a>
+            <a href="https://www.cdc.gov/genomics-and-health/counseling-testing/genetic-testing.html" target="_blank" rel="noreferrer">CDC genetic testing</a>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
